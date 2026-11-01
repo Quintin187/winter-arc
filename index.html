@@ -9,8 +9,6 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Winter Arc">
-<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
 <meta name="format-detection" content="telephone=no">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -418,7 +416,7 @@ input[type=date].pick::-webkit-date-and-time-value{text-align:center}
 <script>
 'use strict';
 /* ---------- Grundwerte aus dem Notion-Tracker ---------- */
-const APP_VERSION = '1.4';
+const APP_VERSION = '1.5';
 const START = '2026-11-01', END = '2027-02-28';
 /* Start-Habits aus Notion. Eigene kommen in S.habits dazu; "from"/"until" legen fest,
    an welchen Tagen ein Habit zählt, damit alte Tage ihre XP behalten. */
@@ -484,6 +482,8 @@ const arcToday = () => { const t = T(); return t < START ? START : t > END ? END
 const dayNum = s => diffDays(START, s) + 1;
 const TOTAL_DAYS = dayNum(END);
 const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+// Wie weit die App unter die Statusleiste reicht (0 = sie fängt erst darunter an)
+const safeTop = () => { const el = document.createElement('div'); el.style.cssText = 'position:fixed;top:0;height:env(safe-area-inset-top);visibility:hidden'; document.body.appendChild(el); const h = Math.round(el.getBoundingClientRect().height); el.remove(); return h; };
 const isStandalone = () => navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
 
 /* Symbole im Stil von SF Symbols (eigene Zeichnungen, weiße Linien auf farbigem Quadrat) */
@@ -919,7 +919,7 @@ function vMe(){
   </div><div class="list mt">
     <button class="li row" data-a="reset">${ico('trash', 'red')}<span class="rc"><span class="rt danger">Alles zurücksetzen</span></span></button>
   </div><p class="foot">Deine Daten liegen nur auf diesem Gerät. Sichere ab und zu ein Backup.</p>
-  <p class="foot" style="text-align:center;margin-top:18px">Winter Arc · Version ${APP_VERSION}</p>`;
+  <p class="foot" style="text-align:center;margin-top:18px">Winter Arc · Version ${APP_VERSION} · Oben ${safeTop()} px · ${isStandalone() ? 'App' : 'Browser'}</p>`;
   return h;
 }
 function streakRow(g, name, c, test){
