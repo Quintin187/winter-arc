@@ -7,7 +7,10 @@
 <meta name="description" content="Winter Arc 2026/27: Habits abhaken, XP sammeln, leveln.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- Seit iOS 26.1 dürfen Web-Apps nicht mehr unter die Statusleiste. Deshalb eine feste Leiste in der Hintergrundfarbe der App. -->
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-title" content="Winter Arc">
 <meta name="color-scheme" content="light dark">
 <meta name="format-detection" content="telephone=no">
@@ -419,7 +422,7 @@ input[type=date].pick::-webkit-date-and-time-value{text-align:center}
 <script>
 'use strict';
 /* ---------- Grundwerte aus dem Notion-Tracker ---------- */
-const APP_VERSION = '1.6';
+const APP_VERSION = '1.7';
 const START = '2026-11-01', END = '2027-02-28';
 /* Start-Habits aus Notion. Eigene kommen in S.habits dazu; "from"/"until" legen fest,
    an welchen Tagen ein Habit zählt, damit alte Tage ihre XP behalten. */
