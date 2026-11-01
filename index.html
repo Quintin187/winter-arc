@@ -422,7 +422,7 @@ input[type=date].pick::-webkit-date-and-time-value{text-align:center}
 <script>
 'use strict';
 /* ---------- Grundwerte aus dem Notion-Tracker ---------- */
-const APP_VERSION = '1.7';
+const APP_VERSION = '1.8';
 const START = '2026-11-01', END = '2027-02-28';
 /* Start-Habits aus Notion. Eigene kommen in S.habits dazu; "from"/"until" legen fest,
    an welchen Tagen ein Habit zählt, damit alte Tage ihre XP behalten. */
@@ -530,6 +530,7 @@ const GLYPHS = {
   heart:'<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0112 7.2 4.3 4.3 0 0119.5 10c0 5.4-7.5 10-7.5 10z"/>',
   leaf:'<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19l7-7"/>',
   music:'<path d="M9 18V5.5l11-2V16M9 18a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM20 16a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>',
+  globe:'<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.7 5.4 3.7 8.5s-1.2 5.9-3.7 8.5c-2.5-2.6-3.7-5.4-3.7-8.5s1.2-5.9 3.7-8.5z"/>',
   run:'<circle cx="14.5" cy="4.5" r="1.8"/><path d="M8 21l3-6 3 2.5V21M6 12l3-3.5 4 .5 2.5 3.5 3 1M11 15l1.5-6"/>',
 };
 const G = (name, cls='gl') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[name] || ''}</svg>`;
@@ -917,6 +918,7 @@ function vMe(){
     <button class="li row" data-a="edit-name">${ico('person', 'blue')}<span class="rc"><span class="rt">Name</span></span><span class="rv">${esc(S.name || '–')}</span>${ICON.chev}</button>
     <button class="li row" data-a="edit-routines">${ico('list', 'orange')}<span class="rc"><span class="rt">Routinen bearbeiten</span></span>${ICON.chev}</button>
     <button class="li row" data-a="rules">${ico('trophy', 'purple')}<span class="rc"><span class="rt">Spielregeln</span></span>${ICON.chev}</button>
+    <div class="li row">${ico('globe', 'blue')}<span class="rc"><span class="rt">Sprache</span></span><span style="width:172px;flex:none" data-notr>${seg('set-lang', [['de','Deutsch'],['en','English']], LANG)}</span></div>
     <label class="li row">${ico('wave', 'pink')}<span class="rc"><span class="rt">Haptisches Feedback</span></span><input type="checkbox" class="sw-t" data-a="toggle-haptics" ${S.haptics ? 'checked' : ''}></label>
     ${SEED && !S.imported ? `<button class="li row" data-a="notion">${ico('snow', 'cyan')}<span class="rc"><span class="rt">Notion-Daten übernehmen</span></span>${ICON.chev}</button>` : ''}
   </div><div class="list mt">
@@ -977,6 +979,109 @@ function vOnboard(){
     ${SEED ? `<button class="btn-primary" data-a="notion">Notion-Daten übernehmen</button><button class="btn-plain" style="margin-top:12px" data-a="ob-fresh">Ohne Daten starten</button>` : `<button class="btn-primary" data-a="ob-fresh">Los geht's</button>`}
     <button class="btn-link" data-a="import">Backup wiederherstellen</button></div>`;
 }
+
+/* ---------- Sprache: Die Oberfläche ist auf Deutsch geschrieben, bei Englisch übersetzt ein Beobachter jeden neuen Text ---------- */
+let LANG = (() => { try { return localStorage.getItem('winterarc.lang') || ((navigator.language || 'de').startsWith('de') ? 'de' : 'en'); } catch { return 'de'; } })();
+const EN = {
+  'Heute':'Today','Gestern':'Yesterday','Aufgaben':'Tasks','Lernen':'Study','Profil':'Profile','Routinen':'Routines','Morgenroutine':'Morning routine','Abendroutine':'Evening routine',
+  'Schlaf':'Sleep','Notiz':'Note','Gedanken zum Tag':'Thoughts on the day','Zeitplan':'Schedule','Im Plan öffnen':'Open in Plan','Zeitblock hinzufügen':'Add time block',
+  'Alle':'All','To-do hinzufügen':'Add to-do','Nichts fällig':'Nothing due','Kein Tag ohne Fortschritt.':'No day without progress.','Bearbeiten':'Edit','Habit hinzufügen':'Add habit',
+  'Perfekter Tag':'Perfect day','Perfekter Tag möglich':'Perfect day possible','+25 XP Bonus geholt':'+25 XP bonus earned','Nächste Prüfung':'Next exam','Keine Zeitblöcke geplant':'No time blocks planned',
+  'Jetzt':'Now','Ziele':'Goals','Überfällig':'Overdue','Demnächst':'Upcoming','Ohne Datum':'No date','Alles erledigt':'All done','Tippe auf +, um ein To-do anzulegen.':'Tap + to add a to-do.',
+  'Nach links wischen zum Löschen, nach rechts zum Abhaken.':'Swipe left to delete, right to complete.','Löschen':'Delete','Erledigt':'Done','Offen':'Open','Läuft':'Active','Erreicht':'Achieved',
+  'Noch keine Ziele':'No goals yet','Erreichte Ziele bringen +100 XP.':'Achieved goals give +100 XP.','Ohne Deadline':'No deadline','Winter-Arc-Ziel':'Winter Arc goal','Monatsziel':'Monthly goal',
+  'Schule':'School','Glaube':'Faith','Arbeit':'Work','Privat':'Personal','Gewohnheiten':'Habits','Fällige To-dos':'Due to-dos','Vorbei':'Past','Keine Prüfungen':'No exams',
+  'Tippe auf +, um eine anzulegen.':'Tap + to add one.','Thema gelernt +15 XP · wiederholt +10 XP':'Topic learned +15 XP · reviewed +10 XP','Noch keine Themen':'No topics yet','Themen':'Topics',
+  'Gelernt':'Learned','Wiederholt':'Reviewed','Wdh.':'Rev.','Thema hinzufügen':'Add topic','Tippe auf ein Thema, um es zu bearbeiten. Nach links wischen zum Löschen.':'Tap a topic to edit it. Swipe left to delete.',
+  'Lernphase':'Study phase','Noch Zeit':'Plenty of time','Morgen':'Tomorrow','Geschrieben':'Written','Klausur':'Exam','Ex':'Quiz','Referat':'Presentation','Fußball':'Football','Fahrschule':'Driving school',
+  'Termin':'Appointment','Freizeit':'Free time','Tag':'Day','Perfekte Tage':'Perfect days','Habit-Quote':'Habit rate','Gesamt-XP':'Total XP','Verlauf':'History','XP-Quellen':'XP sources','Tage':'Days',
+  'Ränge':'Ranks','Aktuell':'Current','Meine Habits':'My habits','Einstellungen':'Settings','Routinen bearbeiten':'Edit routines','Spielregeln':'Rules','Haptisches Feedback':'Haptic feedback','Sprache':'Language',
+  'Notion-Daten übernehmen':'Import Notion data','Backup sichern':'Save backup','In „Dateien“ oder iCloud Drive speichern':'Save to Files or iCloud Drive','Backup laden':'Load backup','Alles zurücksetzen':'Reset everything',
+  'Deine Daten liegen nur auf diesem Gerät. Sichere ab und zu ein Backup.':'Your data only lives on this device. Save a backup now and then.','weniger':'less','mehr':'more','perfekt':'perfect',
+  'Früh aufstehen':'Wake up early','Liegestütze':'Push-ups','Handy-Limit':'Phone limit','Bibel Study':'Bible study',
+  'Neues To-do':'New to-do','Zeitblock':'Time block','Neuer Zeitblock':'New time block','Prüfung':'Exam','Neue Prüfung':'New exam','Ziel':'Goal','Neues Ziel':'New goal','Thema':'Topic','Neuer Habit':'New habit',
+  'Symbol':'Symbol','Farbe':'Color','Niedrig':'Low','Mittel':'Medium','Hoch':'High','Bereich':'Area','Fälligkeit':'Due date','Datum':'Date','Kein Ziel':'No goal','To-do löschen':'Delete to-do','Art':'Type',
+  'Beginn':'Start','Ende':'End','Note':'Grade','Typ':'Type','Monat':'Month','Warum?':'Why?','Lerntag':'Study day','Thema löschen':'Delete topic','Zeitblock löschen':'Delete time block','Prüfung löschen':'Delete exam',
+  'Ziel löschen':'Delete goal','Habit löschen':'Delete habit','Punkt hinzufügen':'Add item','Daten laden':'Load data','Datei auswählen':'Choose file','Oder Backup-Text einfügen':'Or paste backup text','Text laden':'Load text',
+  'Notion-Daten':'Notion data','Wird entschlüsselt …':'Decrypting …','Ohne Daten starten':'Start without data','Backup wiederherstellen':'Restore backup',"Los geht's":"Let's go",'Weiter':'Continue',
+  'Jeden Tag abhaken, XP sammeln, leveln.':'Check off every day, earn XP, level up.','Habits und Routinen':'Habits and routines','Eigene Habits, Morgen- und Abendroutine, Schlaf':'Your habits, morning and evening routine, sleep',
+  'XP, Level und Ränge':'XP, levels and ranks','Von Schneeflocke bis Winterkönig':'From Snowflake to Winter King','Plan, To-dos, Prüfungen, Ziele':'Plan, to-dos, exams, goals','Alles aus deinem Notion-Tracker':'Everything from your Notion tracker',
+  'Trotzdem im Browser nutzen':'Use in browser anyway','Aufstehen ohne Snooze':'Get up without snoozing','Ein Glas Wasser trinken':'Drink a glass of water','Bett machen':'Make the bed','Bibel lesen und beten':'Read the Bible and pray',
+  'Zeitblöcke und To-dos für heute checken':"Check today's blocks and to-dos",'Handy weglegen':'Put the phone away','Habits für heute abhaken':"Tick off today's habits",'Sachen für morgen vorbereiten':'Get things ready for tomorrow','Rechtzeitig ins Bett':'Go to bed on time',
+  'Was ist zu tun?':'What needs doing?','Was steht an?':"What's coming up?",'Fach, z. B. Mathe':'Subject, e.g. Math','Was willst du erreichen?':'What do you want to achieve?','Was treibt dich an?':'What drives you?',
+  'z. B. Wasser trinken':'e.g. Drink water','Dein Name':'Your name','Passwort':'Password','Neuer Punkt':'New item','Wie lief der Tag? Was nimmst du mit?':'How was your day? What do you take away?',
+  'Erledigte ausblenden':'Hide completed','Abbrechen':'Cancel','Fertig':'Done','Zurück':'Back','Weniger Schlaf':'Less sleep','Mehr Schlaf':'More sleep',
+  'Aus deinem Kalender übernommen.':'Imported from your calendar.','Geplante Themen erscheinen an dem Tag unter „Heute“.':'Planned topics show up under “Today” on that day.',
+  'Die Lernphase beginnt automatisch: Klausur 10, Referat 7, Test 5, Ex 3 Tage vorher.':'The study phase starts automatically: exam 10, presentation 7, test 5, quiz 3 days before.',
+  'Jeder abgehakte Habit bringt +10 XP. Für den perfekten Tag brauchst du alle Habits und beide Routinen.':'Every habit you check off gives +10 XP. A perfect day needs all habits and both routines.',
+  'Jeder Habit bringt +10 XP. Neue Habits zählen ab heute, gelöschte verschwinden ab heute und alte XP bleiben erhalten.':'Each habit gives +10 XP. New habits count from today; deleted ones disappear from today and earlier XP stays.',
+  'Änderungen gelten ab jetzt. Abgeschlossene Tage behalten ihre XP.':'Changes apply from now on. Finished days keep their XP.',
+  'Deine Termine, Prüfungen und Ziele aus Notion sind verschlüsselt in der App. Gib das Passwort ein, das du von Claude bekommen hast.':'Your appointments, exams and goals from Notion are encrypted in the app. Enter the password you got from Claude.',
+  'Ein verpasster Tag setzt den Streak auf 0. Der heutige Tag zählt mit, sobald du ihn abhakst.':'A missed day resets the streak to 0. Today counts as soon as you check it off.',
+  'Morgen- bzw. Abendroutine komplett':'Morning or evening routine complete','Mindestens 7 Stunden geschlafen':'Slept at least 7 hours','Perfekter Tag (alle Habits und beide Routinen)':'Perfect day (all habits and both routines)',
+  'To-do erledigt: Niedrig / Mittel / Hoch':'To-do done: low / medium / high','Prüfungsthema gelernt / wiederholt':'Exam topic learned / reviewed','Ziel erreicht':'Goal achieved','Level':'Level','Ränge ':'Ranks',
+  'Streaks zählen, wie viele Tage am Stück du einen Habit geschafft hast. Ein verpasster Tag setzt den Streak auf 0. Der heutige Tag zählt mit, sobald du ihn abhakst.':'Streaks count how many days in a row you completed a habit. A missed day resets it to 0. Today counts as soon as you check it off.',
+  'To-do löschen?':'Delete to-do?','Zeitblock löschen?':'Delete time block?','Ziel löschen?':'Delete goal?','Prüfung samt Themen löschen?':'Delete exam and its topics?','Habit löschen? Die bisher gesammelten XP bleiben erhalten.':'Delete habit? XP earned so far stays.',
+  'Wirklich alles löschen? Habits, XP, Termine und To-dos sind dann weg.':'Really delete everything? Habits, XP, appointments and to-dos will be gone.','Letzte Warnung: Hast du ein Backup? Alles wird gelöscht.':'Last warning: do you have a backup? Everything will be deleted.',
+  'Aktuelle Daten durch das Backup ersetzen?':'Replace current data with the backup?','Die Notion-Daten wurden schon übernommen. Nochmal laden? Das erzeugt doppelte Einträge.':'Notion data was already imported. Load again? This creates duplicates.',
+  'Falsches Passwort':'Wrong password','Backup gespeichert':'Backup saved','Backup geladen':'Backup loaded','Routinen gespeichert':'Routines saved','Wähle ein Datum':'Pick a date','Notion-Daten übernommen':'Notion data imported',
+  'Kein gültiges Backup':'Not a valid backup','Kein Winter-Arc-Backup':'Not a Winter Arc backup','Speichern fehlgeschlagen':'Saving failed',
+};
+const DAYS_EN = {Sonntag:'Sunday',Montag:'Monday',Dienstag:'Tuesday',Mittwoch:'Wednesday',Donnerstag:'Thursday',Freitag:'Friday',Samstag:'Saturday'};
+const MON_EN = {Januar:'January',Februar:'February','März':'March',April:'April',Mai:'May',Juni:'June',Juli:'July',August:'August',September:'September',Oktober:'October',November:'November',Dezember:'December'};
+const pl = (n, a, b) => `${n} ${+n === 1 ? a : b}`;
+const EN_RX = [
+  [/(\d+)\. (Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)/g, (m, d, mo) => `${MON_EN[mo]} ${d}`],
+  [/\b(Sonntag|Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag)\b/g, m => DAYS_EN[m]],
+  [/(Januar|Februar|März|Oktober|Dezember)\b/g, m => MON_EN[m]],
+  [/^(Mär|Mai|Okt|Dez)$/, m => ({'Mär':'Mar','Mai':'May','Okt':'Oct','Dez':'Dec'})[m]],
+  [/\b(So|Mo|Di|Mi|Do|Fr|Sa)\b/g, m => ({So:'Sun',Mo:'Mon',Di:'Tue',Mi:'Wed',Do:'Thu',Fr:'Fri',Sa:'Sat'})[m]],
+  [/Tag (\d+) von (\d+)/g, 'Day $1 of $2'],
+  [/(\d+) Tage? in Folge/g, (m, n) => pl(n, 'day', 'days') + ' in a row'],
+  [/noch (\d+) XP bis Level (\d+)/g, '$1 XP to level $2'], [/noch (\d+) bis Level (\d+)/g, '$1 to level $2'],
+  [/von (\d+) XP/g, 'of $1 XP'], [/^ von (\d+)$/, ' of $1'],
+  [/(\d+) von (\d+) (Thema|Themen) gelernt/g, (m, a, b) => `${a} of ${pl(b, 'topic', 'topics')} learned`],
+  [/(\d+) von (\d+) To-dos/g, '$1 of $2 to-dos'],
+  [/^Noch (.+)$/, (m, r) => 'Still to do: ' + r.replace(/Morgenroutine/g, 'morning routine').replace(/Abendroutine/g, 'evening routine').replace(/ und /g, ' and ')],
+  [/Alles abhaken für \+10 XP/g, 'Check everything for +10 XP'], [/Komplett · \+10 XP geholt/g, 'Complete · +10 XP earned'], [/Komplett · \+10 XP/g, 'Complete · +10 XP'],
+  [/Ausgeschlafen/g, 'Well rested'], [/Ab 7 Stunden \+10 XP/g, '7+ hours: +10 XP'], [/^Schlaf · $/, 'Sleep · '],
+  [/(\d+) (Prüfung|Prüfungen) vor dir/g, (m, n) => pl(n, 'exam', 'exams') + ' ahead'], [/Lern-XP/g, 'study XP'],
+  [/Lernstart/g, 'Study start'], [/(\d+) Tage vor dem Termin/g, '$1 days before'], [/^Note ([\d,]+)$/, 'Grade $1'], [/ · Note /g, ' · Grade '],
+  [/Rekord: (\d+) Tage?/g, (m, n) => 'Best: ' + pl(n, 'day', 'days')],
+  [/(\d+) erledigte anzeigen/g, 'Show $1 completed'],
+  [/(\d+) Zeitbl(?:ock|öcke) diese Woche · über die Woche wischen zum Blättern/g, (m, n) => pl(n, 'time block', 'time blocks') + ' this week · swipe the week to browse'],
+  [/heute (\d+) (Thema|Themen) geplant/g, (m, n) => pl(n, 'topic', 'topics') + ' planned today'],
+  [/Lernen am/g, 'Study on'], [/überfällig seit/g, 'overdue since'], [/Deadline vorbei/g, 'Deadline passed'], [/noch (\d+) Tage?\b/g, (m, n) => pl(n, 'day', 'days') + ' left'], [/^Bis /, 'Until '],
+  [/\bin (\d+) Tagen\b/g, 'in $1 days'], [/\bvor (\d+) Tagen\b/g, '$1 days ago'], [/\bheute\b/g, 'today'], [/\bmorgen\b/g, 'tomorrow'], [/\bgestern\b/g, 'yesterday'],
+  [/\bab (\d+) XP/g, 'from $1 XP'], [/Priorität/g, 'Priority'], [/Status · erreicht = \+100 XP/g, 'Status · achieved = +100 XP'],
+  [/To-do erledigt/g, 'To-do done'], [/Thema gelernt/g, 'Topic learned'], [/Thema wiederholt/g, 'Topic reviewed'], [/Ziel erreicht/g, 'Goal achieved'], [/ komplett/g, ' complete'],
+  [/Perfekter Tag/g, 'Perfect day'], [/^Willkommen, /, 'Welcome, '], [/Neuer Rang:/g, 'New rank:'], [/Weiter so, (.+)!/g, 'Keep it up, $1!'], [/^Gib .+ einen Namen$/, 'Please enter a name'],
+  [/Jeder Habit \((.*)\)/g, (m, r) => `Each habit (${r === 'noch keine' ? 'none yet' : r})`],
+  [/Level (\d+)–(\d+)/g, 'Level $1–$2'], [/ · Oben (\d+) px · /g, ' · Top $1 px · '],
+  [/\b(Schneeflocke|Eisbrecher|Winterwolf|Gipfelstürmer|Frostkrieger|Winterkönig)\b/g, m => ({Schneeflocke:'Snowflake',Eisbrecher:'Icebreaker',Winterwolf:'Winter Wolf','Gipfelstürmer':'Summit Seeker',Frostkrieger:'Frost Warrior','Winterkönig':'Winter King'})[m]],
+  [/\b(Klausur|Referat|Schule|Glaube|Privat)\b/g, m => EN[m]],
+];
+function tr(s){
+  if (LANG !== 'en' || !s) return s;
+  const k = s.trim(); if (!k) return s;
+  if (EN[k] && EN[k] !== k) return s.replace(k, EN[k]);
+  let o = s; for (const [r, v] of EN_RX) o = o.replace(r, v); return o;
+}
+function trNode(root){
+  if (LANG !== 'en' || !root) return;
+  if (root.nodeType === 3) { const v = tr(root.nodeValue); if (v !== root.nodeValue) root.nodeValue = v; return; }
+  if (root.nodeType !== 1 || root.closest('textarea,[data-notr]')) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), list = [];
+  let n; while ((n = w.nextNode())) list.push(n);
+  for (const t of list) { if (t.parentElement && t.parentElement.closest('textarea')) continue; const v = tr(t.nodeValue); if (v !== t.nodeValue) t.nodeValue = v; }
+  const attrs = el => ['placeholder', 'aria-label'].forEach(a => { const v = el.getAttribute(a); if (v) { const x = tr(v); if (x !== v) el.setAttribute(a, x); } });
+  attrs(root); root.querySelectorAll('[placeholder],[aria-label]').forEach(attrs);
+}
+new MutationObserver(ms => { if (LANG !== 'en') return; for (const m of ms) { if (m.type === 'characterData') trNode(m.target); else m.addedNodes.forEach(trNode); } })
+  .observe(document.body, {childList:true, subtree:true, characterData:true});
+const nativeConfirm = window.confirm.bind(window);
+window.confirm = m => nativeConfirm(tr(m));
+document.documentElement.lang = LANG;
 
 /* ---------- Rendern ---------- */
 const VIEWS = { today:vToday, plan:vPlan, tasks:vTasks, learn:vLearn, me:vMe };
@@ -1488,6 +1593,10 @@ const A = {
     const next = {};
     for (const k of ['morning', 'evening']) next[k] = [...document.querySelectorAll(`[data-rt="${k}"] .row[data-id]`)].map(r => ({ id: r.dataset.id.startsWith('new-') ? uid() : r.dataset.id, t: r.querySelector('.inp').value.trim() })).filter(it => it.t);
     act(() => { S.routines = next; }, {haptic:false}); closeSheet(); toast('Routinen gespeichert', {g:'list', c:'orange'});
+  },
+  'set-lang': el => {
+    LANG = el.dataset.v; try { localStorage.setItem('winterarc.lang', LANG); } catch {}
+    document.documentElement.lang = LANG; render();
   },
   'toggle-haptics': el => { S.haptics = el.checked; save(); if (S.haptics) haptic(); },
   rules: () => openRules(),
