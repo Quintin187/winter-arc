@@ -71,6 +71,9 @@ button{font:inherit;color:inherit;letter-spacing:inherit;cursor:pointer;-webkit-
    deshalb liegt im hellen Modus ein feiner Schatten dahinter, damit Uhrzeit und Akku lesbar bleiben. */
 .sb-scrim{position:fixed;top:0;left:0;right:0;height:calc(env(safe-area-inset-top) + 10px);z-index:41;pointer-events:none;display:none}
 @media (prefers-color-scheme: light){ .standalone .sb-scrim{display:block;background:linear-gradient(rgba(0,0,0,.34),rgba(0,0,0,.12) 70%,transparent)} }
+/* Falls iOS die App trotzdem unter einer festen Statusleiste startet: Verlauf oben weich einblenden, keine harte Kante */
+.sb-opaque .aurora{-webkit-mask-image:linear-gradient(transparent,#000 90px,#000 40%,transparent);mask-image:linear-gradient(transparent,#000 90px,#000 40%,transparent)}
+.sb-opaque .sb-scrim{display:none!important}
 
 /* Auswahl von Symbol und Farbe für eigene Habits */
 .pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:10px;padding:14px}
@@ -416,7 +419,7 @@ input[type=date].pick::-webkit-date-and-time-value{text-align:center}
 <script>
 'use strict';
 /* ---------- Grundwerte aus dem Notion-Tracker ---------- */
-const APP_VERSION = '1.5';
+const APP_VERSION = '1.6';
 const START = '2026-11-01', END = '2027-02-28';
 /* Start-Habits aus Notion. Eigene kommen in S.habits dazu; "from"/"until" legen fest,
    an welchen Tagen ein Habit zählt, damit alte Tage ihre XP behalten. */
@@ -1536,6 +1539,7 @@ let lastSeen = T();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && S && T() !== lastSeen) { lastSeen = T(); ui.day = arcToday(); render({stripToSel:true}); } });
 
 if (isStandalone()) document.documentElement.classList.add('standalone');
+if (isStandalone() && isIOS() && safeTop() === 0) document.documentElement.classList.add('sb-opaque');
 S = load();
 enableWeekSwipe();
 enableRowSwipe();
