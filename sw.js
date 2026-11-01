@@ -1,5 +1,5 @@
 // Offline-Cache: online immer die neueste Version laden, offline aus dem Cache starten
-const CACHE = 'winterarc-v1';
+const CACHE = 'winterarc-v3';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
