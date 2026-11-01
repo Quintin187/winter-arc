@@ -418,6 +418,7 @@ input[type=date].pick::-webkit-date-and-time-value{text-align:center}
 <script>
 'use strict';
 /* ---------- Grundwerte aus dem Notion-Tracker ---------- */
+const APP_VERSION = '1.4';
 const START = '2026-11-01', END = '2027-02-28';
 /* Start-Habits aus Notion. Eigene kommen in S.habits dazu; "from"/"until" legen fest,
    an welchen Tagen ein Habit zählt, damit alte Tage ihre XP behalten. */
@@ -917,7 +918,8 @@ function vMe(){
     <button class="li row" data-a="import">${ico('folder', 'teal')}<span class="rc"><span class="rt">Backup laden</span></span>${ICON.chev}</button>
   </div><div class="list mt">
     <button class="li row" data-a="reset">${ico('trash', 'red')}<span class="rc"><span class="rt danger">Alles zurücksetzen</span></span></button>
-  </div><p class="foot">Deine Daten liegen nur auf diesem Gerät. Sichere ab und zu ein Backup.</p>`;
+  </div><p class="foot">Deine Daten liegen nur auf diesem Gerät. Sichere ab und zu ein Backup.</p>
+  <p class="foot" style="text-align:center;margin-top:18px">Winter Arc · Version ${APP_VERSION}</p>`;
   return h;
 }
 function streakRow(g, name, c, test){
@@ -1098,7 +1100,7 @@ function closeSheet(){
   const w = sheetEl; if (!w) return;
   sheetEl = null; sheetLive = null;
   if (document.activeElement) document.activeElement.blur();
-  w.classList.remove('open'); setTimeout(() => w.remove(), 450);
+  w.classList.remove('open'); setTimeout(() => { w.remove(); reloadIfIdle(); }, 450);
 }
 function enableSheetDrag(w){
   const sheet = w.querySelector('.sheet'), heads = w.querySelectorAll('.grab, .sh-head');
@@ -1539,7 +1541,18 @@ enableWeekSwipe();
 enableRowSwipe();
 render({stripToSel:true});
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+/* Updates: beim Öffnen und bei jeder Rückkehr in die App nach einer neuen Version fragen.
+   Kommt eine, lädt die App sich neu, sobald kein Sheet offen ist. */
+let reloadPending = false;
+function reloadIfIdle(){ if (reloadPending && !sheetEl) location.reload(); }
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js', {updateViaCache:'none'}).then(reg => {
+    reg.update().catch(() => {});
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+  }).catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!hadController) return; reloadPending = true; reloadIfIdle(); });
+}
 </script>
 </body>
 </html>
