@@ -7,7 +7,7 @@
 <meta name="description" content="Winter Arc 2026/27: Habits abhaken, XP sammeln, leveln.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Winter Arc">
 <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
@@ -67,8 +67,24 @@ button{font:inherit;color:inherit;letter-spacing:inherit;cursor:pointer;-webkit-
   background:radial-gradient(70% 55% at 6% 0%,rgba(110,165,255,.42),transparent 70%),radial-gradient(55% 45% at 100% 0%,rgba(175,150,255,.32),transparent 70%),radial-gradient(70% 40% at 55% 22%,rgba(120,220,245,.22),transparent 72%);
   -webkit-mask-image:linear-gradient(#000 40%,transparent);mask-image:linear-gradient(#000 40%,transparent)}
 @media (prefers-color-scheme: dark){
-  .aurora{background:radial-gradient(70% 55% at 6% 0%,rgba(40,90,230,.45),transparent 70%),radial-gradient(55% 45% at 100% 0%,rgba(110,60,220,.34),transparent 70%),radial-gradient(70% 40% at 55% 22%,rgba(10,120,160,.24),transparent 72%)}
+  .aurora{height:360px;background:radial-gradient(80% 60% at 10% 0%,rgba(40,90,230,.26),transparent 72%),radial-gradient(60% 50% at 100% 0%,rgba(110,60,220,.18),transparent 72%)}
 }
+/* Die App reicht bis unter die Statusleiste. Deren Schrift ist dabei immer weiß,
+   deshalb liegt im hellen Modus ein feiner Schatten dahinter, damit Uhrzeit und Akku lesbar bleiben. */
+.sb-scrim{position:fixed;top:0;left:0;right:0;height:calc(env(safe-area-inset-top) + 10px);z-index:41;pointer-events:none;display:none}
+@media (prefers-color-scheme: light){ .standalone .sb-scrim{display:block;background:linear-gradient(rgba(0,0,0,.34),rgba(0,0,0,.12) 70%,transparent)} }
+
+/* Auswahl von Symbol und Farbe für eigene Habits */
+.pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:10px;padding:14px}
+.pick-colors{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:12px;padding:14px}
+.pg,.pc{display:grid;place-items:center;cursor:pointer;position:relative}
+.pg input,.pc input{position:absolute;opacity:0;pointer-events:none}
+.pg .ico{width:42px;height:42px;border-radius:11px;background:var(--fill);transition:background .2s}
+.pg .ico .gl{stroke:var(--label);width:21px;height:21px}
+.pg input:checked + .ico{background:var(--c-sel,var(--blue))}
+.pg input:checked + .ico .gl{stroke:#fff}
+.pc span{width:30px;height:30px;border-radius:50%;transition:box-shadow .2s}
+.pc input:checked + span{box-shadow:0 0 0 2.5px var(--card-sheet),0 0 0 4.5px var(--label-2)}
 
 /* Liquid Glass – nur für Bedienelemente: Tab-Leiste, Symbolleisten-Buttons, Sheets, Meldungen */
 .glass{position:relative;isolation:isolate;background:var(--glass);
@@ -393,6 +409,7 @@ input[type=date].pick::-webkit-date-and-time-value{text-align:center}
 </style>
 </head>
 <body>
+<div class="sb-scrim"></div>
 <header class="topbar" id="topbar"></header>
 <main id="app"><div class="aurora"></div><div id="view"></div></main>
 <div class="bottom-fade" id="bfade"></div>
@@ -402,14 +419,17 @@ input[type=date].pick::-webkit-date-and-time-value{text-align:center}
 'use strict';
 /* ---------- Grundwerte aus dem Notion-Tracker ---------- */
 const START = '2026-11-01', END = '2027-02-28';
-const MAX_DAY_XP = 105;
-const HABITS = [
-  {id:'wake',  g:'alarm',    name:'Früh aufstehen', c:'orange'},
-  {id:'push',  g:'dumbbell', name:'Liegestütze',    c:'red'},
-  {id:'read',  g:'book',     name:'Lesen',          c:'brown'},
-  {id:'phone', g:'noPhone',  name:'Handy-Limit',    c:'indigo'},
-  {id:'bible', g:'cross',    name:'Bibel Study',    c:'purple'},
+/* Start-Habits aus Notion. Eigene kommen in S.habits dazu; "from"/"until" legen fest,
+   an welchen Tagen ein Habit zählt, damit alte Tage ihre XP behalten. */
+const DEFAULT_HABITS = [
+  {id:'wake',  g:'alarm',    name:'Früh aufstehen', c:'orange', from:START},
+  {id:'push',  g:'dumbbell', name:'Liegestütze',    c:'red',    from:START},
+  {id:'read',  g:'book',     name:'Lesen',          c:'brown',  from:START},
+  {id:'phone', g:'noPhone',  name:'Handy-Limit',    c:'indigo', from:START},
+  {id:'bible', g:'cross',    name:'Bibel Study',    c:'purple', from:START},
 ];
+const HABIT_GLYPHS = ['alarm','dumbbell','run','book','noPhone','cross','drop','heart','leaf','music','note','zzz','sunrise','moon','soccer','cap','target','star','game','briefcase'];
+const HABIT_COLORS = ['red','orange','yellow','green','mint','teal','cyan','blue','indigo','purple','pink','brown','gray'];
 const ROUTINES = {
   morning:{g:'sunrise', name:'Morgenroutine', c:'yellow', key:'m', done:'md',
     items:['Aufstehen ohne Snooze','Ein Glas Wasser trinken','Bett machen','Bibel lesen und beten','Zeitblöcke und To-dos für heute checken']},
@@ -499,6 +519,11 @@ const GLYPHS = {
   check:'<path d="M5 12.5l4.3 4.3L19 7.2"/>',
   calendar:'<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   lock:'<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 018 0v2.5"/>',
+  drop:'<path d="M12 3.5s6 6.4 6 10.7a6 6 0 01-12 0C6 9.9 12 3.5 12 3.5z"/>',
+  heart:'<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0112 7.2 4.3 4.3 0 0119.5 10c0 5.4-7.5 10-7.5 10z"/>',
+  leaf:'<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19l7-7"/>',
+  music:'<path d="M9 18V5.5l11-2V16M9 18a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM20 16a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>',
+  run:'<circle cx="14.5" cy="4.5" r="1.8"/><path d="M8 21l3-6 3 2.5V21M6 12l3-3.5 4 .5 2.5 3.5 3 1M11 15l1.5-6"/>',
 };
 const G = (name, cls='gl') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[name] || ''}</svg>`;
 const ico = (name, c) => `<span class="ico" style="--c:${C(c)}">${G(name)}</span>`;
@@ -530,7 +555,7 @@ const TABS = [['today','Heute'],['plan','Plan'],['tasks','Aufgaben'],['learn','L
 const KEY = 'winterarc.v1';
 let S = null;
 function freshState(){
-  return { v:1, name:'', created:T(), imported:false, seenLevel:1, haptics:true,
+  return { v:1, name:'', created:T(), imported:false, seenLevel:1, haptics:true, habits:DEFAULT_HABITS.map(x => ({...x})),
     routines:{ morning:ROUTINES.morning.items.map(t => ({id:uid(), t})), evening:ROUTINES.evening.items.map(t => ({id:uid(), t})) },
     days:{}, blocks:[], todos:[], exams:[], goals:[] };
 }
@@ -542,6 +567,7 @@ function normalize(s){
   s.exams.forEach(x => { x.topics = Array.isArray(x.topics) ? x.topics : []; });
   if (!s.routines || !s.routines.morning || !s.routines.evening) s.routines = f.routines;
   if (typeof s.haptics !== 'boolean') s.haptics = true;
+  if (!Array.isArray(s.habits) || !s.habits.length && !s.habitsEdited) s.habits = DEFAULT_HABITS.map(x => ({...x}));
   return s;
 }
 function load(){ try { const raw = localStorage.getItem(KEY); return raw ? normalize(JSON.parse(raw)) : null; } catch { return null; } }
@@ -549,15 +575,16 @@ function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch { t
 const dayObj = d => (S.days[d] = S.days[d] || {});
 
 /* ---------- Spielregeln ---------- */
+const activeHabits = date => S.habits.filter(x => (!x.from || x.from <= date) && (!x.until || x.until > date));
 function dayStats(date){
-  const d = S.days[date] || {};
-  const h = HABITS.filter(x => d.h && d.h[x.id]).length;
+  const d = S.days[date] || {}, act = activeHabits(date), n = act.length;
+  const h = act.filter(x => d.h && d.h[x.id]).length;
   const m = !!d.md, e = !!d.ed;
   const sleep = d.s == null ? null : d.s;
   const sl = sleep != null && sleep >= 7;
-  const perfect = h === HABITS.length && m && e;
+  const perfect = n > 0 && h === n && m && e;
   const xp = h*10 + (m?10:0) + (e?10:0) + (sl?10:0) + (perfect?25:0);
-  return { h, m, e, sl, sleep, perfect, xp };
+  return { h, n, m, e, sl, sleep, perfect, xp, max: n*10 + 55 };
 }
 function xpParts(){
   let days = 0;
@@ -646,11 +673,12 @@ function vToday(){
   h += summaryCard();
   h += `<div style="height:12px"></div>` + progressCard(st);
 
-  h += sh('Habits');
-  h += `<div class="list">` + HABITS.map(x => {
+  h += sh('Habits', `<button class="lnk" data-a="manage-habits">Bearbeiten</button>`);
+  const act = activeHabits(day);
+  h += `<div class="list">` + (act.length ? '' : `<button class="li row add-row" data-a="new-habit">${ICON.plus}<span class="rt">Habit hinzufügen</span></button>`) + act.map(x => {
     const on = !!(d.h && d.h[x.id]), sk = streak(habitDone(x.id));
     return `<button class="li row" data-a="habit" data-h="${x.id}" data-k="h-${x.id}">${ico(x.g, x.c)}
-      <span class="rc"><span class="rt">${x.name}</span><span class="rs">${sk ? `${FLAME}${plural(sk, 'Tag', 'Tage')} in Folge` : '+10 XP'}</span></span>
+      <span class="rc"><span class="rt">${esc(x.name)}</span><span class="rs">${sk ? `${FLAME}${plural(sk, 'Tag', 'Tage')} in Folge` : '+10 XP'}</span></span>
       ${chk(on, x.c)}</button>`;
   }).join('') + `</div>`;
 
@@ -685,7 +713,7 @@ function dayStrip(){
   let out = '';
   for (let d = START; d <= shown; d = addDays(d, 1)) {
     const s = dayStats(d), dt = pd(d), fut = d > last;
-    const ind = fut ? '<i></i>' : s.perfect ? '<i class="star">★</i>' : `<i><u style="width:${Math.min(1, s.xp / MAX_DAY_XP)*100}%"></u></i>`;
+    const ind = fut ? '<i></i>' : s.perfect ? '<i class="star">★</i>' : `<i><u style="width:${Math.min(1, s.xp / s.max)*100}%"></u></i>`;
     out += `<button class="ds ${d === ui.day ? 'sel' : ''} ${d === T() ? 'today' : ''} ${fut ? 'fut' : ''}" ${fut ? 'disabled' : `data-a="pick-day" data-d="${d}"`} aria-label="${fmtLong(d)}">
       <span class="ds-wd">${WD[dt.getDay()]}</span><b class="rnd">${dt.getDate()}</b>${ind}</button>`;
   }
@@ -700,13 +728,13 @@ function summaryCard(){
 }
 function progressCard(st){
   const r = (st.m?1:0) + (st.e?1:0), miss = [];
-  if (st.h < 5) miss.push(plural(5 - st.h, 'Habit', 'Habits'));
+  if (st.h < st.n) miss.push(plural(st.n - st.h, 'Habit', 'Habits'));
   if (!st.m) miss.push('Morgenroutine');
   if (!st.e) miss.push('Abendroutine');
   const hint = miss.length > 1 ? miss.slice(0, -1).join(', ') + ' und ' + miss.slice(-1) : miss[0];
   return `<div class="card"><div class="prog">
-      <div class="gauge-wrap">${gauge(st.xp / MAX_DAY_XP)}<div class="gauge-c"><b class="rnd">${st.xp}</b><span>von ${MAX_DAY_XP} XP</span></div></div>
-      <div class="metrics">${metric('Habits', `${st.h}/5`, st.h/5, 'blue')}${metric('Routinen', `${r}/2`, r/2, 'orange')}${metric('Schlaf', st.sleep != null ? fmtH(st.sleep) : '–', st.sleep != null ? st.sleep/7 : 0, 'teal')}</div>
+      <div class="gauge-wrap">${gauge(st.xp / st.max)}<div class="gauge-c"><b class="rnd">${st.xp}</b><span>von ${st.max} XP</span></div></div>
+      <div class="metrics">${metric('Habits', `${st.h}/${st.n}`, st.n ? st.h/st.n : 0, 'blue')}${metric('Routinen', `${r}/2`, r/2, 'orange')}${metric('Schlaf', st.sleep != null ? fmtH(st.sleep) : '–', st.sleep != null ? st.sleep/7 : 0, 'teal')}</div>
     </div>
     <div class="card-row">${ico('star', st.perfect ? 'yellow' : 'gray')}<span class="rc"><span class="rt">${st.perfect ? 'Perfekter Tag' : 'Perfekter Tag möglich'}</span><span class="rs">${st.perfect ? '+25 XP Bonus geholt' : `Noch ${hint}`}</span></span>${st.perfect ? chk(true, 'yellow') : ''}</div></div>`;
 }
@@ -852,9 +880,9 @@ function examDetail(x){
 function vMe(){
   const p = xpParts(), xp = p.total, L = levelFor(xp), r = rankFor(L), cur = xpForLevel(L), nxt = xpForLevel(L + 1), t = T();
   const elapsed = t < START ? 0 : dayNum(arcToday());
-  let habitsDone = 0, perfect = 0;
-  for (const k in S.days) { const s = dayStats(k); habitsDone += s.h; if (s.perfect) perfect++; }
-  const quote = elapsed ? Math.round(habitsDone / (elapsed * HABITS.length) * 100) : 0;
+  let habitsDone = 0, habitsPossible = 0, perfect = 0;
+  if (t >= START) for (let d = START; d <= arcToday(); d = addDays(d, 1)) { const s = dayStats(d); habitsDone += s.h; habitsPossible += s.n; if (s.perfect) perfect++; }
+  const quote = habitsPossible ? Math.round(habitsDone / habitsPossible * 100) : 0;
   let h = `<div class="me-hero"><div class="orb">${r.e}</div><div class="me-name">${esc(S.name || 'Spieler')}</div>
     <div class="me-rank">Level <span class="rnd">${L}</span> · ${r.n}</div>
     <div class="me-bar">${bar((xp - cur) / (nxt - cur))}<div class="sum-xp" style="font-size:.765rem"><span class="rnd">${xp} XP</span><span>noch ${nxt - xp} XP bis Level ${L + 1}</span></div></div></div>`;
@@ -863,7 +891,7 @@ function vMe(){
     <div class="tile"><small>Perfekte Tage</small><b class="rnd">${perfect}</b></div>
     <div class="tile"><small>Habit-Quote</small><b class="rnd">${quote}<span> %</span></b></div>
     <div class="tile"><small>Gesamt-XP</small><b class="rnd">${xp}</b></div></div>`;
-  h += sh('Streaks') + `<div class="list">` + HABITS.map(x => streakRow(x.g, x.name, x.c, habitDone(x.id))).join('') + streakRow('star', 'Perfekter Tag', 'yellow', perfectDone) + `</div>`;
+  h += sh('Streaks') + `<div class="list">` + activeHabits(arcToday()).map(x => streakRow(x.g, esc(x.name), x.c, habitDone(x.id))).join('') + streakRow('star', 'Perfekter Tag', 'yellow', perfectDone) + `</div>`;
   h += `<p class="foot">Ein verpasster Tag setzt den Streak auf 0. Der heutige Tag zählt mit, sobald du ihn abhakst.</p>`;
   h += sh('Verlauf') + heatmap();
   const parts = [['Tage', p.days, 'blue'], ['To-dos', p.todos, 'orange'], ['Lernen', p.learn, 'teal'], ['Ziele', p.goals, 'purple']];
@@ -875,6 +903,9 @@ function vMe(){
       <span class="rc"><span class="rt" style="${here ? 'font-weight:600' : ''}">${rk.n}</span><span class="rs">Level ${rk.min}${rk.max ? '–' + rk.max : '+'} · ab ${xpForLevel(rk.min)} XP</span></span>
       ${here ? `<span class="pill">Aktuell</span>` : got ? `<span style="color:var(--green)">${ICON.ok}</span>` : `<span style="color:var(--label-3)">${G('lock', 'i')}</span>`}</div>`;
   }).join('') + `</div>`;
+  h += `<div id="habits-sec"></div>` + sh('Meine Habits') + `<div class="list">${activeHabits(arcToday()).map(x => `<button class="li row" data-a="edit-habit" data-id="${x.id}">${ico(x.g, x.c)}<span class="rc"><span class="rt">${esc(x.name)}</span></span>${ICON.chev}</button>`).join('')}
+    <button class="li row add-row" data-a="new-habit">${ICON.plus}<span class="rt">Habit hinzufügen</span></button></div>
+    <p class="foot">Jeder Habit bringt +10 XP. Neue Habits zählen ab heute, gelöschte verschwinden ab heute und alte XP bleiben erhalten.</p>`;
   h += sh('Einstellungen') + `<div class="list">
     <button class="li row" data-a="edit-name">${ico('person', 'blue')}<span class="rc"><span class="rt">Name</span></span><span class="rv">${esc(S.name || '–')}</span>${ICON.chev}</button>
     <button class="li row" data-a="edit-routines">${ico('list', 'orange')}<span class="rc"><span class="rt">Routinen bearbeiten</span></span>${ICON.chev}</button>
@@ -906,7 +937,7 @@ function heatmap(){
       let cls = 'hc', attr = '';
       if (d < START || d > END) cls += ' out';
       else if (d > t) cls += ' fut';
-      else { const s = dayStats(d); cls += ' l' + (s.perfect ? 4 : s.xp === 0 ? 0 : s.xp < 35 ? 1 : s.xp < 70 ? 2 : 3); attr = `data-a="heat" data-d="${d}" aria-label="${fmtLong(d)}: ${s.xp} XP"`; if (d === t) cls += ' tdy'; }
+      else { const s = dayStats(d); cls += ' l' + (s.perfect ? 4 : s.xp === 0 ? 0 : s.xp / s.max < .34 ? 1 : s.xp / s.max < .67 ? 2 : 3); attr = `data-a="heat" data-d="${d}" aria-label="${fmtLong(d)}: ${s.xp} XP"`; if (d === t) cls += ' tdy'; }
       cells += `<button class="${cls}" ${attr} style="grid-column:${c + 1};grid-row:${r + 1}"></button>`;
     }
   }
@@ -931,7 +962,7 @@ function vOnboard(){
     <p class="ob-dates">1. November 2026 – 28. Februar 2027 · ${TOTAL_DAYS} Tage</p>
     <p class="ob-claim">Jeden Tag abhaken, XP sammeln, leveln.</p>
     <div class="list">
-      <div class="li row">${ico('check', 'blue')}<span class="rc"><span class="rt">Habits und Routinen</span><span class="rs">Fünf Habits, Morgen- und Abendroutine, Schlaf</span></span></div>
+      <div class="li row">${ico('check', 'blue')}<span class="rc"><span class="rt">Habits und Routinen</span><span class="rs">Eigene Habits, Morgen- und Abendroutine, Schlaf</span></span></div>
       <div class="li row">${ico('trophy', 'purple')}<span class="rc"><span class="rt">XP, Level und Ränge</span><span class="rs">Von Schneeflocke bis Winterkönig</span></span></div>
       <div class="li row">${ico('calendar', 'red')}<span class="rc"><span class="rt">Plan, To-dos, Prüfungen, Ziele</span><span class="rs">Alles aus deinem Notion-Tracker</span></span></div>
     </div>
@@ -1191,6 +1222,16 @@ function openTopic(id){
     <button type="button" class="btn-danger" data-a="del-topic" data-id="${tp.id}">Thema löschen</button></form>`, 'save-topic'));
 }
 
+function openHabit(id){
+  const hb = id ? S.habits.find(x => x.id === id) : null;
+  const v = hb || { name:'', g:'star', c:'blue' };
+  openSheet(sheetFrame(hb ? 'Habit' : 'Neuer Habit', `<form id="f" onsubmit="return false" data-id="${hb ? hb.id : ''}" style="--c-sel:${C(v.c)}">
+    <div class="list">${fieldRow('title', v.name, 'z. B. Wasser trinken')}</div>
+    <div class="fl">Symbol</div><div class="card pick-grid">${HABIT_GLYPHS.map(g => `<label class="pg" aria-label="${g}"><input type="radio" name="g" value="${g}" ${g === v.g ? 'checked' : ''}><span class="ico">${G(g)}</span></label>`).join('')}</div>
+    <div class="fl">Farbe</div><div class="card pick-colors">${HABIT_COLORS.map(c => `<label class="pc" aria-label="${c}"><input type="radio" name="c" value="${c}" ${c === v.c ? 'checked' : ''} onchange="this.closest('form').style.setProperty('--c-sel','var(--${c})')"><span style="background:var(--${c})"></span></label>`).join('')}</div>
+    <p class="foot">Jeder abgehakte Habit bringt +10 XP. Für den perfekten Tag brauchst du alle Habits und beide Routinen.</p>
+    ${hb ? `<button type="button" class="btn-danger" data-a="del-habit" data-id="${hb.id}">Habit löschen</button>` : ''}</form>`, 'save-habit'), {focus:!hb});
+}
 function openName(){
   openSheet(sheetFrame('Name', `<form id="f" onsubmit="return false"><div class="list">${fieldRow('title', S.name, 'Dein Name', 'autocomplete="given-name"')}</div></form>`, 'save-name'), {focus:true});
 }
@@ -1204,7 +1245,7 @@ const rtEditRow = (id, t) => `<div class="li row" data-id="${id}" style="--sl:54
 function openRules(){
   const R = (a, b) => `<div class="rule"><span>${a}</span><b class="rnd">${b}</b></div>`;
   openSheet(sheetFrame('Spielregeln', `
-    <div class="list">${R('Jeder Habit (Früh aufstehen, Liegestütze, Lesen, Handy-Limit, Bibel Study)', '+10')}${R('Morgen- bzw. Abendroutine komplett', '+10')}${R('Mindestens 7 Stunden geschlafen', '+10')}${R('Perfekter Tag (alle 5 Habits und beide Routinen)', '+25')}</div>
+    <div class="list">${R(`Jeder Habit (${activeHabits(arcToday()).map(x => esc(x.name)).join(', ') || 'noch keine'})`, '+10')}${R('Morgen- bzw. Abendroutine komplett', '+10')}${R('Mindestens 7 Stunden geschlafen', '+10')}${R('Perfekter Tag (alle Habits und beide Routinen)', '+25')}</div>
     <div class="list mt">${R('To-do erledigt: Niedrig / Mittel / Hoch', '+10 / 20 / 30')}${R('Prüfungsthema gelernt / wiederholt', '+15 / 10')}${R('Ziel erreicht', '+100')}</div>
     <div class="fl">Level</div><div class="card" style="font-size:.882rem;line-height:1.4">Level 2 ab 50 XP, Level 3 ab 200, Level 5 ab 800, Level 10 ab 4.050, Level 20 ab 18.050 XP. Formel: 50 × (Level − 1)².</div>
     <div class="fl">Ränge</div><div class="list">${RANKS.map(r => R(`${r.e}  ${r.n}`, `Level ${r.min}${r.max ? '–' + r.max : '+'}`)).join('')}</div>
@@ -1349,8 +1390,27 @@ const A = {
   'go-today': () => { ui.day = arcToday(); render({stripToSel:true}); },
   heat: el => { ui.day = el.dataset.d; ui.scroll.today = 0; switchTab('today'); render({stripToSel:true}); },
   habit: el => {
-    const id = el.dataset.h, hb = HABITS.find(x => x.id === id);
+    const id = el.dataset.h, hb = S.habits.find(x => x.id === id);
     act(() => { const d = dayObj(ui.day); d.h = d.h || {}; if (d.h[id]) delete d.h[id]; else d.h[id] = 1; }, {key:el.dataset.k, g:hb.g, c:hb.c, label:hb.name});
+  },
+  'manage-habits': () => { switchTab('me'); const s = $('#habits-sec'); if (s) scrollTo(0, s.getBoundingClientRect().top + scrollY - 70); },
+  'new-habit': () => openHabit(),
+  'edit-habit': el => openHabit(el.dataset.id),
+  'save-habit': () => {
+    const name = fv('title').trim(); if (!name) { toast('Gib dem Habit einen Namen', {g:'note', c:'orange'}); return; }
+    const id = $('#f').dataset.id, g = fv('g') || 'star', c = fv('c') || 'blue';
+    act(() => { S.habitsEdited = true; if (id) Object.assign(S.habits.find(x => x.id === id), {name, g, c}); else S.habits.push({id:uid(), name, g, c, from:arcToday()}); }, {haptic:false});
+    closeSheet();
+  },
+  'del-habit': el => {
+    if (!confirm('Habit löschen? Die bisher gesammelten XP bleiben erhalten.')) return;
+    act(() => {
+      S.habitsEdited = true;
+      const hb = S.habits.find(x => x.id === el.dataset.id), today = arcToday();
+      // Ohne Vergangenheit ganz entfernen, sonst ab heute ausblenden
+      if (!hb.from || hb.from >= today) S.habits = S.habits.filter(x => x !== hb); else hb.until = today;
+    }, {haptic:false});
+    closeSheet();
   },
   routine: el => openRoutine(el.dataset.r),
   'rt-item': el => {
@@ -1473,6 +1533,7 @@ if (window.visualViewport) {
 let lastSeen = T();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && S && T() !== lastSeen) { lastSeen = T(); ui.day = arcToday(); render({stripToSel:true}); } });
 
+if (isStandalone()) document.documentElement.classList.add('standalone');
 S = load();
 enableWeekSwipe();
 enableRowSwipe();
