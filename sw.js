@@ -1,9 +1,10 @@
-// Offline-Cache: online immer die neueste Version laden, offline aus dem Cache starten
-const CACHE = 'winterarc-v3';
+// Offline-Cache: online immer die neueste Version vom Server holen, offline aus dem Cache starten.
+// Version hochzählen, wenn sich diese Datei ändert – dann lädt die App sich selbst neu.
+const CACHE = 'winterarc-v4';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(a => new Request(a, {cache: 'reload'})))));
   self.skipWaiting();
 });
 
@@ -14,8 +15,12 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
+  // "no-cache" fragt immer beim Server nach, statt eine bis zu 10 Minuten alte Kopie zu nehmen
+  const req = e.request.mode === 'navigate'
+    ? new Request(e.request.url, {cache: 'no-cache', credentials: 'same-origin'})
+    : new Request(e.request, {cache: 'no-cache'});
   e.respondWith(
-    fetch(e.request)
+    fetch(req)
       .then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return res; })
       .catch(() => caches.match(e.request, {ignoreSearch: true}).then(r => r || caches.match('./index.html')))
   );
